@@ -80,9 +80,16 @@ def show_visualizations(maze, start, goal, results):
         )
 
 
+def print_base_maze(maze, start, goal):
+    print("Maze layout (same for BFS and DFS):")
+    print_maze(maze, start, goal)
+    print()
+
+
 def main():
     maze, start, goal = initialize_maze()
-    print(f"\nStart: {start}  Goal: {goal}\n")
+    print(f"\nStart: {start}  Goal: {goal}")
+    print_base_maze(maze, start, goal)
 
     algorithms = [("BFS", BFS), ("DFS", DFS)]
     results = []
