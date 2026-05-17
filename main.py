@@ -1,115 +1,79 @@
-from config_maze import initialize_maze
+import copy
+import time
+import tracemalloc
+
 from algorithms import BFS, DFS
-from benchmark import measure_search
+from config_maze import initialize_maze
+
+ALGOS = (("BFS", BFS), ("DFS", DFS))
+SYMBOLS = {0: ".", 1: "#"}
 
 
 def print_maze(maze, start, goal, path=None):
-    path_cells = set(path or [])
-    height = max(y for y, _ in maze) + 1
-    width = max(x for _, x in maze) + 1
-
-    for y in range(height):
+    path = set(path or [])
+    h, w = max(y for y, _ in maze) + 1, max(x for _, x in maze) + 1
+    for y in range(h):
         row = []
-        for x in range(width):
-            cell = (y, x)
-            if cell == start:
-                row.append("S")
-            elif cell == goal:
-                row.append("G")
-            elif cell in path_cells:
-                row.append("*")
-            elif maze.get(cell, 1) == 0:
-                row.append(".")
-            else:
-                row.append("#")
+        for x in range(w):
+            c = (y, x)
+            row.append(
+                "S" if c == start else "G" if c == goal else "*" if c in path else SYMBOLS[maze.get(c, 1)]
+            )
         print("".join(row))
 
 
-def print_result(result):
-    name = result["name"]
-    if result["path"]:
-        print(
-            f"{name}: path found ({result['path_length']} steps) | "
-            f"time: {result['time_s'] * 1000:.4f} ms | "
-            f"memory: {result['memory_bytes'] / 1024:.2f} KB"
-        )
-        print_maze(result["maze"], result["start"], result["goal"], result["path"])
-    else:
-        print(
-            f"{name}: no path found | "
-            f"time: {result['time_s'] * 1000:.4f} ms | "
-            f"memory: {result['memory_bytes'] / 1024:.2f} KB"
-        )
+def measure(name, fn, start, goal, maze):
+    tracemalloc.start()
+    t0 = time.perf_counter()
+    path = fn(start, goal, copy.copy(maze))
+    elapsed = time.perf_counter() - t0
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    return {
+        "name": name,
+        "path": path,
+        "path_length": len(path),
+        "time_s": elapsed,
+        "memory_kb": peak / 1024,
+    }
 
 
-def print_comparison_table(results):
-    headers = ("Algorithm", "Time (ms)", "Memory (KB)", "Path Length")
+def print_table(results):
     rows = [
-        (
-            r["name"],
-            f"{r['time_s'] * 1000:.4f}",
-            f"{r['memory_bytes'] / 1024:.2f}",
-            str(r["path_length"]),
-        )
+        (r["name"], f"{r['time_s']*1000:.4f}", f"{r['memory_kb']:.2f}", str(r["path_length"]))
         for r in results
     ]
-
+    headers = ("Algorithm", "Time (ms)", "Memory (KB)", "Path Length")
     widths = [max(len(h), *(len(row[i]) for row in rows)) for i, h in enumerate(headers)]
+    line = lambda cells: "|" + "|".join(f" {c:<{w}} " for c, w in zip(cells, widths)) + "|"
     sep = "+" + "+".join("-" * (w + 2) for w in widths) + "+"
-    header_line = "|" + "|".join(f" {h:<{w}} " for h, w in zip(headers, widths)) + "|"
-
-    print("\nPerformance comparison")
-    print(sep)
-    print(header_line)
-    print(sep)
-    for row in rows:
-        print("|" + "|".join(f" {cell:<{w}} " for cell, w in zip(row, widths)) + "|")
-    print(sep)
-
-
-def show_visualizations(maze, start, goal, results):
-    try:
-        from visulization import plot_comparison_charts, plot_mazes_side_by_side
-
-        plot_mazes_side_by_side(maze, start, goal, results)
-        plot_comparison_charts(results)
-    except ImportError:
-        print(
-            "matplotlib is not installed. Run:\n"
-            "  .venv\\Scripts\\python.exe -m pip install -r requirements.txt"
-        )
-
-
-def print_base_maze(maze, start, goal):
-    print("Maze layout (same for BFS and DFS):")
-    print_maze(maze, start, goal)
-    print()
+    print("\nPerformance comparison", sep, line(headers), sep, *[line(row) for row in rows], sep, sep="\n")
 
 
 def main():
     maze, start, goal = initialize_maze()
-    print(f"\nStart: {start}  Goal: {goal}")
-    print_base_maze(maze, start, goal)
+    print(f"\nStart: {start}  Goal: {goal}\nMaze layout (same for BFS and DFS):")
+    print_maze(maze, start, goal)
+    print()
 
-    algorithms = [("BFS", BFS), ("DFS", DFS)]
     results = []
-    for name, search_fn in algorithms:
-        result = measure_search(name, search_fn, start, goal, maze)
-        result["maze"] = maze
-        result["start"] = start
-        result["goal"] = goal
-        results.append(result)
-        print_result(result)
+    for name, fn in ALGOS:
+        r = measure(name, fn, start, goal, maze)
+        stats = f"{r['time_s']*1000:.4f} ms | {r['memory_kb']:.2f} KB"
+        print(f"{name}: {'path found' if r['path'] else 'no path'} ({r['path_length']} steps) | {stats}")
+        if r["path"]:
+            print_maze(maze, start, goal, r["path"])
         print()
+        results.append(r)
 
-    print_comparison_table(results)
-
+    print_table(results)
     try:
-        show_plot = input("\nShow maze paths and comparison charts? (y/n): ").strip().lower()
-        if show_plot == "y":
-            show_visualizations(maze, start, goal, results)
-    except EOFError:
-        pass
+        if input("\nShow maze paths and comparison charts? (y/n): ").strip().lower() == "y":
+            from visulization import show_results
+
+            show_results(maze, start, goal, results)
+    except (EOFError, ImportError):
+        print("Install charts deps: .venv\\Scripts\\python.exe -m pip install -r requirements.txt")
 
 
 if __name__ == "__main__":

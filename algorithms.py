@@ -1,53 +1,31 @@
 from collections import deque
 
-DIRECTIONS = ((0, 1), (1, 0), (0, -1), (-1, 0))
+DIRS = ((0, 1), (1, 0), (0, -1), (-1, 0))
 
 
-def _is_walkable(maze, cell):
-    return cell in maze and maze[cell] == 0
-
-
-def _reconstruct_path(came_from, goal):
-    if goal not in came_from:
-        return []
-    path = []
-    current = goal
-    while current is not None:
-        path.append(current)
-        current = came_from[current]
-    return path[::-1]
-
-
-def _expand_neighbors(current, maze, came_from, add_neighbor):
-    y, x = current
-    for dy, dx in DIRECTIONS:
-        neighbor = (y + dy, x + dx)
-        if _is_walkable(maze, neighbor) and neighbor not in came_from:
-            came_from[neighbor] = current
-            add_neighbor(neighbor)
-
-
-def BFS(start, goal, maze):
-    queue = deque([start])
-    came_from = {start: None}
-
-    while queue:
-        current = queue.popleft()
-        if current == goal:
-            return _reconstruct_path(came_from, goal)
-        _expand_neighbors(current, maze, came_from, queue.append)
-
+def _search(start, goal, maze, dfs=False):
+    frontier = [start] if dfs else deque([start])
+    came = {start: None}
+    while frontier:
+        cur = frontier.pop() if dfs else frontier.popleft()
+        if cur == goal:
+            path, cell = [], cur
+            while cell is not None:
+                path.append(cell)
+                cell = came[cell]
+            return path[::-1]
+        y, x = cur
+        for dy, dx in DIRS:
+            n = (y + dy, x + dx)
+            if n in maze and maze[n] == 0 and n not in came:
+                came[n] = cur
+                frontier.append(n)
     return []
 
 
-def DFS(start, goal, maze):
-    stack = [start]
-    came_from = {start: None}
+def reachable(start, goal, maze):
+    return bool(_search(start, goal, maze))
 
-    while stack:
-        current = stack.pop()
-        if current == goal:
-            return _reconstruct_path(came_from, goal)
-        _expand_neighbors(current, maze, came_from, stack.append)
 
-    return []
+BFS = lambda start, goal, maze: _search(start, goal, maze)
+DFS = lambda start, goal, maze: _search(start, goal, maze, True)
