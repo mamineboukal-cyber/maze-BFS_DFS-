@@ -2,6 +2,43 @@ import matplotlib.pyplot as plt
 import numpy as np
 from math import pi
 
+
+def plot_maze(maze, start, goal, path=None):
+    height = max(y for y, _ in maze) + 1
+    width = max(x for _, x in maze) + 1
+    grid = np.ones((height, width), dtype=int)
+    path_cells = set(path or [])
+
+    for (y, x), value in maze.items():
+        grid[y, x] = value
+
+    colors = np.zeros((height, width, 3))
+    for y in range(height):
+        for x in range(width):
+            cell = (y, x)
+            if cell == start:
+                colors[y, x] = [0.2, 0.8, 0.2]
+            elif cell == goal:
+                colors[y, x] = [0.9, 0.2, 0.2]
+            elif cell in path_cells:
+                colors[y, x] = [0.3, 0.5, 1.0]
+            elif grid[y, x] == 0:
+                colors[y, x] = [1.0, 1.0, 1.0]
+            else:
+                colors[y, x] = [0.15, 0.15, 0.15]
+
+    fig, ax = plt.subplots(figsize=(max(6, width * 0.5), max(6, height * 0.5)))
+    ax.imshow(colors, interpolation="nearest")
+    ax.set_xticks(range(width))
+    ax.set_yticks(range(height))
+    ax.set_xticklabels(range(width))
+    ax.set_yticklabels(range(height))
+    ax.grid(which="both", color="gray", linewidth=0.5, alpha=0.4)
+    ax.set_title("Maze (green=start, red=goal, blue=path)")
+    plt.tight_layout()
+    plt.show()
+
+
 def plot_step_metrics(df):
     plt.figure(figsize=(12, 6))
     for algo in df['Algorithm'].unique():
@@ -27,6 +64,8 @@ def plot_radar_chart(df):
     angles = [n / float(num_vars) * 2 * pi for n in range(num_vars)]
     angles += angles[:1]
     for algorithm in df['Algorithm'].unique():
+        if algorithm not in df_normalized.index:
+            continue
         values = df_normalized.loc[algorithm].values.tolist()
         values += values[:1]
         ax.plot(angles, values, marker='o', label=algorithm)

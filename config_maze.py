@@ -1,4 +1,6 @@
 import random
+
+
 def generate_maze(width, height, path, start, goal):
     maze = {}
     for y in range(height):
@@ -7,37 +9,40 @@ def generate_maze(width, height, path, start, goal):
 
     maze[start] = 0
     maze[goal] = 0
-
     for coord in path:
         maze[coord] = 0
 
-    return maze  
+    return maze
+
+
+def _random_path(height, width):
+    y, x = 0, 0
+    path = [(y, x)]
+    while (y, x) != (height - 1, width - 1):
+        moves = []
+        if y < height - 1:
+            moves.append("down")
+        if x < width - 1:
+            moves.append("right")
+        choice = random.choice(moves)
+        if choice == "down":
+            y += 1
+        else:
+            x += 1
+        path.append((y, x))
+    return path
+
 
 def initialize_maze():
-    #1-geting the width and the height from the user
-    width = int(input("Enter the width of the maze: "))
-    height = int(input("Enter the height of the maze: "))
-    #2-defining start and goal
+    while True:
+        width = int(input("Enter the width of the maze: "))
+        height = int(input("Enter the height of the maze: "))
+        if width > 0 and height > 0:
+            break
+        print("Width and height must be positive integers.")
+
     start = (0, 0)
     goal = (height - 1, width - 1)
-    #3-generating random path
-    H = w = 0
-    path = [(0,0)]
-    while H != height - 1 or w != width - 1: 
-        R = random.choice(['H', 'V'])
-        if R == 'H' and H < height - 1:
-            H += 1
-            path.append((H, w))
-        elif R == 'V' and w < width - 1:
-            w += 1
-            path.append((H, w))
-        elif H == height - 1 :
-            w += 1 
-            path.append((H,w))
-        elif  w == width - 1 :
-            H += 1 
-            path.append((H,w))
-    #4-generating the maze
-    maze = generate_maze(width, height, path , start , goal )
-
-    return maze ,start ,goal
+    path = _random_path(height, width)
+    maze = generate_maze(width, height, path, start, goal)
+    return maze, start, goal

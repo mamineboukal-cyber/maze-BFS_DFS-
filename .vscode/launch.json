@@ -1,20 +1,13 @@
-
 {
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "C: Debug Active File",
-            "type": "cppdbg",
+            "name": "Python: main.py",
+            "type": "debugpy",
             "request": "launch",
-            "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${fileDirname}",
-            "environment": [],
-            "externalConsole": true,
-            "MIMode": "gdb",
-            "miDebuggerPath": "gdb",
-            "preLaunchTask": "C/C++: gcc build active file"
+            "program": "${workspaceFolder}/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
         }
     ]
 }
