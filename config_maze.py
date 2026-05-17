@@ -35,8 +35,12 @@ def _random_path(height, width):
 
 def initialize_maze():
     while True:
-        width = int(input("Enter the width of the maze: "))
-        height = int(input("Enter the height of the maze: "))
+        try:
+            width = int(input("Enter the width of the maze: "))
+            height = int(input("Enter the height of the maze: "))
+        except ValueError:
+            print("Please enter valid integers.")
+            continue
         if width > 0 and height > 0:
             break
         print("Width and height must be positive integers.")

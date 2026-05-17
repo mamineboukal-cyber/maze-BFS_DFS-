@@ -3,7 +3,7 @@ import numpy as np
 from math import pi
 
 
-def plot_maze(maze, start, goal, path=None):
+def _build_maze_colors(maze, start, goal, path=None):
     height = max(y for y, _ in maze) + 1
     width = max(x for _, x in maze) + 1
     grid = np.ones((height, width), dtype=int)
@@ -27,6 +27,22 @@ def plot_maze(maze, start, goal, path=None):
             else:
                 colors[y, x] = [0.15, 0.15, 0.15]
 
+    return colors, height, width
+
+
+def _draw_maze_on_axis(ax, maze, start, goal, path, title):
+    colors, height, width = _build_maze_colors(maze, start, goal, path)
+    ax.imshow(colors, interpolation="nearest")
+    ax.set_xticks(range(width))
+    ax.set_yticks(range(height))
+    ax.set_xticklabels(range(width))
+    ax.set_yticklabels(range(height))
+    ax.grid(which="both", color="gray", linewidth=0.5, alpha=0.4)
+    ax.set_title(title)
+
+
+def plot_maze(maze, start, goal, path=None, title="Maze (green=start, red=goal, blue=path)"):
+    colors, height, width = _build_maze_colors(maze, start, goal, path)
     fig, ax = plt.subplots(figsize=(max(6, width * 0.5), max(6, height * 0.5)))
     ax.imshow(colors, interpolation="nearest")
     ax.set_xticks(range(width))
@@ -34,7 +50,56 @@ def plot_maze(maze, start, goal, path=None):
     ax.set_xticklabels(range(width))
     ax.set_yticklabels(range(height))
     ax.grid(which="both", color="gray", linewidth=0.5, alpha=0.4)
-    ax.set_title("Maze (green=start, red=goal, blue=path)")
+    ax.set_title(title)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_mazes_side_by_side(maze, start, goal, results):
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    for ax, result in zip(axes, results):
+        title = (
+            f"{result['name']} — {result['path_length']} steps | "
+            f"{result['time_s'] * 1000:.3f} ms | "
+            f"{result['memory_bytes'] / 1024:.2f} KB"
+        )
+        _draw_maze_on_axis(ax, maze, start, goal, result["path"], title)
+    plt.suptitle("Path comparison: BFS vs DFS", fontsize=14, y=1.02)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_comparison_charts(results):
+    names = [r["name"] for r in results]
+    time_ms = [r["time_s"] * 1000 for r in results]
+    memory_kb = [r["memory_bytes"] / 1024 for r in results]
+    path_lengths = [r["path_length"] for r in results]
+    colors = ["#4C72B0", "#DD8452"]
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    metrics = [
+        ("Execution time (ms)", time_ms),
+        ("Peak memory (KB)", memory_kb),
+        ("Path length (steps)", path_lengths),
+    ]
+
+    formats = ["{:.4f}", "{:.2f}", "{}"]
+    for ax, (title, values), fmt in zip(axes, metrics, formats):
+        bars = ax.bar(names, values, color=colors[: len(names)])
+        ax.set_title(title)
+        ax.set_ylabel(title)
+        ax.grid(axis="y", linestyle="--", alpha=0.6)
+        for bar, value in zip(bars, values):
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height(),
+                fmt.format(value),
+                ha="center",
+                va="bottom",
+                fontsize=10,
+            )
+
+    plt.suptitle("BFS vs DFS performance", fontsize=14, y=1.02)
     plt.tight_layout()
     plt.show()
 
